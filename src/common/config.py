@@ -4,6 +4,8 @@ import os
 import json
 from typing import Any, Dict, Optional
 
+from src.common.errors import ConfigurationError
+
 
 class Config:
     def __init__(self, config_path: Optional[str] = None):
@@ -14,7 +16,10 @@ class Config:
 
     def load(self, path: str) -> None:
         with open(path) as f:
-            self._data = json.load(f)
+            data = json.load(f)
+        if not isinstance(data, dict):
+            raise ConfigurationError("Config root must be a JSON object")
+        self._data = data
 
     def _load_env_overrides(self) -> None:
         prefix = "AO_"
