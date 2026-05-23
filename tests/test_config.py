@@ -1,5 +1,6 @@
 import pytest
 from src.common.config import Config
+from src.common.errors import ConfigurationError
 
 
 class TestConfig:
@@ -10,6 +11,19 @@ class TestConfig:
         assert config.get("app.name") == "test"
         assert config.get("app.port") == 8080
 
+    def test_load_config_requires_object_root(self, tmp_path):
+        config_file = tmp_path / "config.json"
+        config_file.write_text('["not", "an", "object"]')
+
+        with pytest.raises(ConfigurationError, match="Config root must be a JSON object"):
+            Config(str(config_file))
+
+    def test_load_config_reports_json_parse_context(self, tmp_path):
+        config_file = tmp_path / "config.json"
+        config_file.write_text('{"app": "missing-end"')
+
+        with pytest.raises(ConfigurationError, match=r"Failed to parse JSON in .*config\.json at line 1, column \d+:"):
+            Config(str(config_file))
     def test_default_value(self):
         config = Config()
         assert config.get("nonexistent.key", "default") == "default"

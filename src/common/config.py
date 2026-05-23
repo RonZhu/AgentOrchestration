@@ -1,8 +1,10 @@
 """Configuration management module."""
 
-import os
 import json
+import os
 from typing import Any, Dict, Optional
+
+from src.common.errors import ConfigurationError
 
 
 class Config:
@@ -13,8 +15,16 @@ class Config:
         self._load_env_overrides()
 
     def load(self, path: str) -> None:
-        with open(path) as f:
-            self._data = json.load(f)
+        try:
+            with open(path) as f:
+                data = json.load(f)
+        except json.JSONDecodeError as exc:
+            raise ConfigurationError(
+                f"Failed to parse JSON in {path} at line {exc.lineno}, column {exc.colno}: {exc.msg}"
+            ) from exc
+        if not isinstance(data, dict):
+            raise ConfigurationError("Config root must be a JSON object")
+        self._data = data
 
     def _load_env_overrides(self) -> None:
         prefix = "AO_"
