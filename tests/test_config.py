@@ -18,6 +18,13 @@ class TestConfig:
         with pytest.raises(ConfigurationError, match="Config root must be a JSON object"):
             Config(str(config_file))
 
+    def test_load_config_reports_json_parse_context(self, tmp_path):
+        config_file = tmp_path / "config.json"
+        config_file.write_text('{"app": "missing-end"')
+
+        with pytest.raises(ConfigurationError, match=r"Failed to parse JSON in .*config\.json at line 1, column \d+:"):
+            Config(str(config_file))
+
     def test_default_value(self):
         config = Config()
         assert config.get("nonexistent.key", "default") == "default"
